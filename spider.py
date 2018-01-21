@@ -12,10 +12,13 @@ db = client[MONGO_DB]
 
 
 
-browser = webdriver.Chrome()
+browser = webdriver.PhantomJS(service_args=SERVICE_ARGS)
 wait = WebDriverWait(browser,20)
 
+browser.set_window_size(1400,900)
+
 def search():
+    print('正在搜索')
     browser.get('https://www.taobao.com')
     _input = wait.until(
         EC.presence_of_element_located((By.CSS_SELECTOR, '#q'))
@@ -30,6 +33,7 @@ def search():
     return total.text
 
 def next_page(page_num):
+    print('正在翻页',page_num)
     _input = wait.until(
         EC.presence_of_element_located((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > input'))
     )
@@ -72,6 +76,7 @@ def main():
     #print(total)
     for i in range(2, 3 + 1):
         next_page(i)
+    browser.close()
 
 if __name__ =='__main__':
     main()
