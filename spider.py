@@ -19,32 +19,38 @@ browser.set_window_size(1400,900)
 
 def search():
     print('正在搜索')
-    browser.get('https://www.taobao.com')
-    _input = wait.until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, '#q'))
-    )
-    submit = wait.until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, '#J_TSearchForm > div.search-button > button'))
-    )
-    _input.send_keys('meishi')
-    submit.click()
-    total = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#mainsrp-pager > div > div > div > div.total')))
-    get_products()
-    return total.text
+    try:
+        browser.get('https://www.taobao.com')
+        _input = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '#q'))
+        )
+        submit = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '#J_TSearchForm > div.search-button > button'))
+        )
+        _input.send_keys(KEY_WORD)
+        submit.click()
+        total = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#mainsrp-pager > div > div > div > div.total')))
+        get_products()
+        return total.text
+    except TimeoutException:
+        return search()
 
 def next_page(page_num):
     print('正在翻页',page_num)
-    _input = wait.until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > input'))
-    )
-    submit = wait.until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > span.btn.J_Submit'))
-    )
-    _input.clear()
-    _input.send_keys(page_num)
-    submit.click()
-    wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > ul > li.item.active > span'), str(page_num)))
-    get_products()
+    try:
+        _input = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > input'))
+        )
+        submit = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > span.btn.J_Submit'))
+        )
+        _input.clear()
+        _input.send_keys(page_num)
+        submit.click()
+        wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > ul > li.item.active > span'), str(page_num)))
+        get_products()
+    except TimeoutException:
+        next_page(page_number)
 
 def get_products():
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#mainsrp-itemlist .items .item')))
@@ -65,18 +71,25 @@ def get_products():
         print('\n')
 
 def save_to_mongo(result):
-    if db[MONGO_TABLE].insert(result):
-        print('succeed')
+    try:
+        if db[KEY_WORD].insert(result):
+            print('succeed')
+    except Exception:
+        print('failed to save to monogo', result)
 
 def main():
-    total = search()
-    res = re.compile('\d+')
-    total = int(res.search(total).group())
-    #total = (re.compile('(\d+)').search(total).group(1))
-    #print(total)
-    for i in range(2, 3 + 1):
-        next_page(i)
-    browser.close()
+    try:
+        total = search()
+        res = re.compile('\d+')
+        total = int(res.search(total).group())
+        #total = (re.compile('(\d+)').search(total).group(1))
+        print(total)
+        for i in range(2, total + 1):
+            next_page(i)
+    except Exception:
+        print('Something went wrong!')
+    finally:
+        browser.close()
 
 if __name__ =='__main__':
     main()
